@@ -1,5 +1,3 @@
-# Machine-Party-Mod-Menu
-Mod Menu for Machine Party, uses Mod Loader
 <div align="center">
 
 # 🐍 VIPER MENU v0.2
