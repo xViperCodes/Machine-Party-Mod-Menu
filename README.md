@@ -14,6 +14,7 @@ Runs on Krunk-theduck's [MachinePartyModLoader](https://github.com/Krunk-theduck
 ![Viper Menu](https://i.imgur.com/dxbMTdk_d.webp?maxwidth=1520&fidelity=grand)
 ![Viper Menu](https://i.imgur.com/8PbJDq0_d.webp?maxwidth=1520&fidelity=grand)
 https://github.com/user-attachments/assets/82beea6f-b275-4d6c-adcd-be6de977a7a2
+https://github.com/user-attachments/assets/6015d4f8-18cb-45a1-8c89-79bd60456622
 
 </div>
 
