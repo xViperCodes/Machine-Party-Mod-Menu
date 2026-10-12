@@ -74,7 +74,7 @@ Runs on Krunk-theduck's [MachinePartyModLoader](https://github.com/Krunk-theduck
 - Endless session
 - See the default rotation (up next)
 
-### Session ![HOST](https://img.shields.io/badge/HOST-ff6b6b?style=flat-square) ![NEW](https://img.shields.io/badge/NEW-3ddc84?style=flat-square)
+### Session ![HOST](https://img.shields.io/badge/HOST-ff6b6b?style=flat-square)
 - **Score editor**: + / - / 0 for each player, adjustable step, reset all scores. Everyone sees the new scores.
 - **Points multiplier**: x1 to x5 on every point scored from then on
 - **Skip round / Skip minigame**: ends it through the game's normal finish, so everyone gets the usual end screen
@@ -82,7 +82,7 @@ Runs on Krunk-theduck's [MachinePartyModLoader](https://github.com/Krunk-theduck
 - **End after this minigame / End session now**
 - **Pick the Duck Hunt hunter**: next round only, or every round
 
-### Bots ![HOST](https://img.shields.io/badge/HOST-ff6b6b?style=flat-square) ![BETA](https://img.shields.io/badge/BETA-f0b030?style=flat-square)
+### Bots ![HOST](https://img.shields.io/badge/HOST-ff6b6b?style=flat-square)
 - Add named bots to fill the lobby
 - Bots stand still. A minigame that waits on every player for something can hang; just remove the bot.
 
