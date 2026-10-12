@@ -10,7 +10,8 @@ Runs on Krunk-theduck's [MachinePartyModLoader](https://github.com/Krunk-theduck
 ![Game](https://img.shields.io/badge/game-Machine%20Party-555?style=flat-square)
 ![Loader](https://img.shields.io/badge/loader-MachinePartyModLoader-555?style=flat-square)
 
-![Viper Menu](https://i.imgur.com/ixTfGkp_d.webp?maxwidth=1520&fidelity=grand)(https://i.imgur.com/dxbMTdk_d.webp?maxwidth=1520&fidelity=grand)
+![Viper Menu](https://i.imgur.com/ixTfGkp_d.webp?maxwidth=1520&fidelity=grand)
+![Viper Menu](https://i.imgur.com/dxbMTdk_d.webp?maxwidth=1520&fidelity=grand)
 
 </div>
 
