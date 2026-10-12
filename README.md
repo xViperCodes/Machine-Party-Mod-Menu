@@ -45,9 +45,9 @@ Runs on Krunk-theduck's [MachinePartyModLoader](https://github.com/Krunk-theduck
 ### Duck Hunt extras
 - Magazine HUD, so you know when you're out
 - Teleport to the marker (J)
-- Godmode (duck) ![BETA](https://img.shields.io/badge/BETA-f0b030?style=flat-square): only fully reliable as host
+- Godmode (duck) : only fully reliable as host
 - Infinite ammo and rapidfire (hunter)
-- Speed hack with a multiplier (duck) ![BETA](https://img.shields.io/badge/BETA-f0b030?style=flat-square)
+- Speed hack with a multiplier (duck)
 
 ### Solvers
 - **Chisel Gauntlet**: shows or glows only the segments you need to carve
@@ -55,13 +55,13 @@ Runs on Krunk-theduck's [MachinePartyModLoader](https://github.com/Krunk-theduck
 - **Stable Footing**: shows the safe symbol, can hide the tiles that are dropping, fallback symbol on V
 - **Inside Job**: highlights the syringe ![HOST](https://img.shields.io/badge/HOST-ff6b6b?style=flat-square), can hide the other containers, fullbright
 - **Table Manners**: countdown HUD for when the coach looks. Exact timer as host; as a client, tap L / K when he looks up / away.
-- **The Filter**: hold G to auto-sort items ![BETA](https://img.shields.io/badge/BETA-f0b030?style=flat-square) (best-effort for now, more accurate in a later update)
+- **The Filter**: hold G to auto-sort items (best-effort for now, more accurate in a later update)
 
 ### Players
 - Player list with Teleport To and Teleport To Me. These use the game's own teleport, so they work on friends without the mod.
-- ![NEW](https://img.shields.io/badge/NEW-3ddc84?style=flat-square) **Shove**: uses each minigame's own shove/hit where it has one, otherwise a short teleport push. Adjustable strength and distance.
-- ![NEW](https://img.shields.io/badge/NEW-3ddc84?style=flat-square) **Freeze**: keeps pulling a player back to the spot where you froze them
-- ![NEW](https://img.shields.io/badge/NEW-3ddc84?style=flat-square) **Smite**: instantly eliminates a player in minigames that have a kill. Greyed out in minigames where the game decides eliminations itself, like Chisel Gauntlet and Smoke Break.
+- **Shove**: uses each minigame's own shove/hit where it has one, otherwise a short teleport push. Adjustable strength and distance.
+- **Freeze**: keeps pulling a player back to the spot where you froze them
+- **Smite**: instantly eliminates a player in minigames that have a kill. Greyed out in minigames where the game decides eliminations itself, like Chisel Gauntlet and Smoke Break.
 - Freeze everyone else / Unfreeze all / Smite everyone else
 - Teleport all players to me (HOME)
 - Teleport items & entities to the chosen player (PAGE UP): mines, gun parts, junk, crates, the roomba and more. Objects the host owns only stay moved if you're the host.
