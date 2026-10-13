@@ -212,7 +212,6 @@ Also useful: `%APPDATA%\Godot\app_userdata\Machine Party\modloader.log` shows wh
 ## Download
 
 - [viper_menu_v0.2.zip](../../releases/latest)
-- [VirusTotal](VIRUSTOTAL_LINK_HERE)
 
 ---
 
