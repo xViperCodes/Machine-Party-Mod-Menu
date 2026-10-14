@@ -1,4 +1,4 @@
-# Viper Menu v0.2 - Machine Party
+# Viper Menu v0.3 - Machine Party
 
 Mod for Krunk-theduck's MachinePartyModLoader (loader v3 / API 2). Developed by xViperCodes.
 
@@ -26,10 +26,22 @@ After a game update, re-run the loader (that's the loader's rule, not this mod's
 | F8 | Console |
 | (unbound) | Noclip, shove / freeze / smite the chosen player |
 
+Noclip: W forward, S back, A left, D right, Space up, Shift down.
+
 While the menu is open only INSERT/END work, so clicking around doesn't fire game hotkeys.
 
 The menu fits itself to the screen. Drag the title bar to move it, drag the corner grip to resize it,
 and use Settings > Menu scale to make it bigger or smaller.
+
+## New in v0.3
+- **Server Browser tab:** list public lobbies, join one, join any lobby by room ID, copy your room ID,
+  and (host) make your lobby public with a name, max players and mid-match joining.
+  Shares the lobby format with MachineParty+, so players of either mod see each other's lobbies.
+- **Kick:** a player dropdown and Kick button in the Players tab (plus `kick <name>` in the console).
+- **Noclip:** new controls (W/A/S/D, Space up, Shift down), moves flat relative to the camera and
+  stays on through round starts.
+- **Info tab:** GitHub and YouTube buttons, credits, and a note when the 8 Player mod is installed.
+- **Console:** `kick`, `servers`, `join <room id>`, `roomid`, `public`, `private`.
 
 ## New in v0.2
 - **Session tab (host):** score editor (+ / - / 0 per player, step size, reset all), points multiplier,
@@ -47,7 +59,7 @@ and use Settings > Menu scale to make it bigger or smaller.
 
 ## Host vs client
 The host runs the game logic, so some features need you to be host:
-- **Host only:** custom queue / play now / force-start, the whole Session tab, kick,
+- **Host only:** custom queue / play now / force-start, the whole Session tab, kick, making the lobby public,
   Inside Job syringe info, bots,
   moving host-owned objects (mines, crates, junk...), exact Table Manners timer.
 - **Works for everyone, even on friends running vanilla:** teleport to / teleport to me / pull all
@@ -62,7 +74,16 @@ The host runs the game logic, so some features need you to be host:
   doesn't answer can hang - remove the bot.
 - ESP / aimbot / solver overlays target online play; local couch mode renders split-screen.
 - The **Debug Mode** flag shows `n/a` if your game version has no matching variable.
-- GitHub / UnknownCheats buttons: fill `GITHUB_URL` / `UC_URL` at the top of `main.gd`.
+- **8 players:** the 8 Player mod (Binary1936/machine-party-8p) patches 56 of the game's own files and
+  needs every player on it, so it isn't built into Viper Menu. Install it separately; Viper Menu runs
+  alongside it and lets public lobbies go up to 8.
+
+## Credits
+- xViperCodes - Viper Menu
+- Obsidian420 - inspiration and a lot of the cheat / solver ideas
+- Krunk-theduck - MachinePartyModLoader
+- J_axon and Krunk - MachineParty+ (server browser and public lobbies adapted from it, MIT License -
+  see THIRD_PARTY_NOTICES.md)
 
 ## If something breaks
 - `%APPDATA%\Godot\app_userdata\Machine Party\modloader.log` - what the loader loaded.

@@ -44,6 +44,7 @@ var _freeze_mg: Node = null
 func setup() -> void:
 	app.cfg.def("pl.target", -1)
 	app.cfg.def("pl.block_rejoin", true)
+	app.cfg.def("pl.kick_target", -1)
 	app.cfg.def("pl.entity_radius", 2.0)
 	app.hk.register("tp_all_to_me", "Teleport all players to me", app.hk.kb(KEY_HOME), "Players")
 	app.hk.register("tp_items_to_target", "Teleport items & entities to chosen player", app.hk.kb(KEY_PAGEUP), "Players")
@@ -323,16 +324,44 @@ func kick(id: int) -> void:
 			_blocked_steam_ids.append(sid)
 	var pname: String = app.g.player_name(id)
 	var be = app.g.backend()
-	# Send them the game's own "room disbanded" refusal so they land on the main
-	# menu with a message, then drop the connection.
+	app.note("kicking " + pname + "...")
+	# 1) The game's own "room disbanded" refusal: in the lobby, their game
+	#    leaves by itself and lands on the main menu with a message.
 	if app.g.valid(be) and be.has_method("refuse_client_rpc"):
 		be.rpc_id(id, "refuse_client_rpc", id, 3)
-	await get_tree().create_timer(0.6).timeout
+	# 2) MachineParty+'s kick message, so players running it leave cleanly
+	#    even mid-match (same packet format, channel 11).
+	_send_mpplus_kick(id)
+	# 3) Give them a few seconds to leave on their own before forcing it -
+	#    a forced disconnect is the last resort.
+	for i in 12:
+		await get_tree().create_timer(0.25).timeout
+		if not multiplayer.has_multiplayer_peer() or not multiplayer.get_peers().has(id):
+			app.note("kicked " + pname)
+			return
 	if multiplayer.has_multiplayer_peer():
 		var peer = multiplayer.multiplayer_peer
 		if peer != null and multiplayer.get_peers().has(id):
 			peer.disconnect_peer(id)
-	app.note("kicked " + pname)
+	app.note("kicked " + pname + " (forced)")
+
+
+func _send_mpplus_kick(id: int) -> void:
+	var sid = _steam_id(id)
+	var br = app.mod("browser")
+	var steam = br.steam() if br != null else null
+	if sid == null or steam == null or not steam.has_method("sendP2PPacket"):
+		return
+	var bytes := JSON.stringify({"t": "kick"}).to_utf8_buffer()
+	steam.sendP2PPacket(int(sid), bytes, 2, 11)
+
+
+func kick_target() -> void:
+	var id := int(app.cfg.val("pl.kick_target", -1))
+	if id <= 0 or not app.g.player_ids().has(id):
+		app.note("kick: pick a player first")
+		return
+	kick(id)
 
 
 func _steam_id(id: int):
@@ -386,9 +415,25 @@ func build_ui(ui, page) -> void:
 	ui.note(page, "These use each minigame's own shove and death functions, so they work on friends without the mod and count in the game's scoring. Freezes clear when the minigame changes. Smite isn't available in Chisel Gauntlet or Smoke Break - those games decide eliminations themselves.")
 
 	ui.header(page, "Kick")
-	ui.check(page, "Block kicked players from rejoining (this session)", "pl.block_rejoin")
+	ui.option_dynamic(page, "Player", "pl.kick_target", _kick_items)
+	var kb: HBoxContainer = ui.buttons(page, [["Kick player", kick_target, "Removes them from your lobby. Host only."]])
+	(kb.get_child(0) as Button).add_theme_color_override("font_color", ui.BAD)
+	ui.check(page, "Block kicked players from rejoining (this session)", "pl.block_rejoin",
+		"They also stop seeing your lobby in the server browser.")
 	ui.buttons(page, [["Clear rejoin blocks", clear_blocks]])
+	ui.live(page, func() -> String:
+		if not app.g.is_host():
+			return "You're not the host - only the host can kick."
+		return "Kick also sits on each player's row above. Kicking in the lobby is cleanest; mid-match, players without a mod get disconnected if they don't leave on their own.", ui.MUTED)
 	_rebuild_list()
+
+
+func _kick_items() -> Array:
+	var out: Array = [[-1, "Pick a player"]]
+	for id in app.g.player_ids():
+		if id != app.g.my_id() and id > 1:
+			out.append([id, app.g.player_name(id)])
+	return out
 
 
 func _player_items() -> Array:

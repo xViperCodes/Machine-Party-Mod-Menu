@@ -1,12 +1,12 @@
 <div align="center">
 
-# 🐍 VIPER MENU v0.2
+# 🐍 VIPER MENU v0.3
 
 **Mod menu for Machine Party** - by **xViperCodes**
 
 Runs on Krunk-theduck's [MachinePartyModLoader](https://github.com/Krunk-theduck/MachinePartyModLoader)
 
-![Version](https://img.shields.io/badge/version-v0.2-3ddc84?style=flat-square)
+![Version](https://img.shields.io/badge/version-v0.3-3ddc84?style=flat-square)
 ![Game](https://img.shields.io/badge/game-Machine%20Party-555?style=flat-square)
 ![Loader](https://img.shields.io/badge/loader-MachinePartyModLoader-555?style=flat-square)
 
@@ -69,7 +69,7 @@ https://github.com/user-attachments/assets/6015d4f8-18cb-45a1-8c89-79bd60456622
 - Freeze everyone else / Unfreeze all / Smite everyone else
 - Teleport all players to me (HOME)
 - Teleport items & entities to the chosen player (PAGE UP): mines, gun parts, junk, crates, the roomba and more. Objects the host owns only stay moved if you're the host.
-- Kick, with an option to block them from rejoining ![HOST](https://img.shields.io/badge/HOST-ff6b6b?style=flat-square)
+- **Kick**: pick a player and press Kick (or use the Kick button on their row), with an option to block them from rejoining ![HOST](https://img.shields.io/badge/HOST-ff6b6b?style=flat-square)
 
 ### Minigames ![HOST](https://img.shields.io/badge/HOST-ff6b6b?style=flat-square)
 - Force-start in single player
@@ -86,12 +86,19 @@ https://github.com/user-attachments/assets/6015d4f8-18cb-45a1-8c89-79bd60456622
 - **End after this minigame / End session now**
 - **Pick the Duck Hunt hunter**: next round only, or every round
 
+### Server Browser
+- List of public lobbies from players running Viper Menu or MachineParty+, with player counts, search and refresh
+- Join any listed lobby, or join any lobby (public or private) by pasting its 18-digit room ID
+- Copy your own room ID to share it
+- **Make lobby public** ![HOST](https://img.shields.io/badge/HOST-ff6b6b?style=flat-square): set a lobby name, max players and whether people can join mid-match. Make it private again any time.
+- Joining uses the game's own join, so you can join hosts who don't have any mod. Public lobbies use the same format as MachineParty+, so players of either mod see each other's lobbies.
+
 ### Bots ![HOST](https://img.shields.io/badge/HOST-ff6b6b?style=flat-square)
 - Add named bots to fill the lobby
 - Bots stand still. A minigame that waits on every player for something can hang; just remove the bot.
 
 ### Misc
-- **Noclip**: fly through walls with adjustable speed
+- **Noclip**: fly through walls with adjustable speed. W forward, S back, A left, D right, Space up, Shift down.
 - **Freecam** (F6): mouse to look, WASD to fly, Space/E up, Ctrl/C/Q down, Shift faster, Alt slower, mouse wheel for speed. "Follow player" mode orbits any player. Your character is frozen while flying (optional). Only your screen changes.
 - **Console** (F8): see the [command list](#console-commands) below
 - Teleport loose objects to any player
@@ -103,7 +110,7 @@ https://github.com/user-attachments/assets/6015d4f8-18cb-45a1-8c89-79bd60456622
 - The menu fits itself to your screen. Adjustable scale, drag to move, resize from the corner.
 - Freeze your game input while the menu is open
 - **Disable all cheats** button and **Unload mod** button
-- Info tab shows your version and loaded mods
+- Info tab shows your version, loaded mods, credits and links to GitHub and YouTube
 
 ---
 
@@ -157,6 +164,12 @@ shove <name>              shove a player
 freeze <name>             freeze / unfreeze a player
 smite <name>              eliminate a player
 freecam                   toggle freecam
+kick <name>               kick a player             (host)
+servers                   list public lobbies
+join <room id>            join a lobby by room ID
+roomid                    copy your lobby's room ID
+public                    make your lobby public    (host)
+private                   make your lobby private   (host)
 score <name> <points>     set a player's score      (host)
 skip                      skip the round            (host)
 skip game                 skip the whole minigame   (host)
@@ -174,8 +187,8 @@ Anything else is evaluated as a GDScript expression, e.g. `me.global_position`. 
 
 ## Host vs client
 
-- 🔴 **Host only:** Minigames tab (queue, play now, force-start, endless), the whole Session tab, kick, bots, the Inside Job syringe highlight, the exact Table Manners timer, keeping host-owned objects where you moved them
-- 🟢 **Works for everyone**, even when friends are on the vanilla game: teleports, shove, freeze, smite, ESP, aimbot, solvers, noclip, freecam, speed hack
+- 🔴 **Host only:** Minigames tab (queue, play now, force-start, endless), the whole Session tab, kick, making the lobby public, bots, the Inside Job syringe highlight, the exact Table Manners timer, keeping host-owned objects where you moved them
+- 🟢 **Works for everyone**, even when friends are on the vanilla game: teleports, shove, freeze, smite, ESP, aimbot, solvers, noclip, freecam, speed hack, server browser and joining by room ID
 - **Godmode** is only fully reliable as host
 
 ---
@@ -206,12 +219,13 @@ Also useful: `%APPDATA%\Godot\app_userdata\Machine Party\modloader.log` shows wh
 - ESP, aimbot and solver overlays are made for online play. Local couch mode renders split-screen, so they won't line up there.
 - A Debug flag shows "n/a" if your game version doesn't have it.
 - Freecam only changes your own screen.
+- **8 players:** the [8 Player mod](https://github.com/Binary1936/machine-party-8p) by Binary1936 patches the game's own files and needs every player in a 5-8 lobby to have it, so it isn't built into Viper Menu. Install it separately - Viper Menu works alongside it, and public lobbies can then go up to 8 players.
 
 ---
 
 ## Download
 
-- [viper_menu_v0.2.zip](../../releases/latest)
+- [viper_menu_v0.3.zip](../../releases/latest)
 
 ---
 
@@ -219,6 +233,8 @@ Also useful: `%APPDATA%\Godot\app_userdata\Machine Party\modloader.log` shows wh
 
 - **Obsidian420** - Inspiration & a lot of the cheat/solver ideas
 - **[Krunk-theduck](https://github.com/Krunk-theduck)** - [MachinePartyModLoader](https://github.com/Krunk-theduck/MachinePartyModLoader)
+- **J_axon** and **Krunk** - [MachineParty+](https://github.com/Ghostx10742/MachineParty-Plus) - the server browser and public lobbies are adapted from it (MIT License, see [THIRD_PARTY_NOTICES.md](viper_menu/THIRD_PARTY_NOTICES.md))
+- **[Binary1936](https://github.com/Binary1936)** - [machine-party-8p](https://github.com/Binary1936/machine-party-8p) - the 8 Player mod Viper Menu works alongside
 - **xViperCodes** - Viper Menu
 
 ---

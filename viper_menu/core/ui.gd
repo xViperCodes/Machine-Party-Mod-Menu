@@ -5,7 +5,7 @@ extends Node
 
 var app = null
 
-const TABS := ["Debug", "ESP", "Aimbot", "Solvers", "Players", "Minigames", "Session", "Bots", "Misc", "Hotkeys", "Settings", "Info"]
+const TABS := ["Debug", "ESP", "Aimbot", "Solvers", "Players", "Minigames", "Session", "Server Browser", "Bots", "Misc", "Hotkeys", "Settings", "Info"]
 ## Which module methods fill each tab, in order.
 const TAB_BUILDERS := {
 	"Debug": [["debug", "build_ui"]],
@@ -15,6 +15,7 @@ const TAB_BUILDERS := {
 	"Players": [["players", "build_ui"]],
 	"Minigames": [["minigames", "build_ui"]],
 	"Session": [["session", "build_ui"]],
+	"Server Browser": [["browser", "build_ui"]],
 	"Bots": [["bots", "build_ui"]],
 	"Misc": [["misc", "build_ui"], ["duck", "build_misc_ui"]],
 }
@@ -880,8 +881,15 @@ func _build_info(p: VBoxContainer) -> void:
 			str(app.loader.api_version()) if app.loader.has_method("api_version") else "?"])
 	buttons(p, [
 		["GitHub", func() -> void: _open_url(app.GITHUB_URL)],
-		["UnknownCheats", func() -> void: _open_url(app.UC_URL)],
+		["YouTube", func() -> void: _open_url(app.YOUTUBE_URL)],
 	])
+	header(p, "Credits")
+	note(p, "xViperCodes - Viper Menu\nObsidian420 - inspiration and a lot of the cheat / solver ideas\nKrunk-theduck - MachinePartyModLoader\nJ_axon and Krunk - MachineParty+ (the server browser and public lobbies are adapted from it, MIT License)", TEXT)
+	live(p, func() -> String:
+		var br = app.mod("browser")
+		if br != null and br.has_8p():
+			return "8 Player mod (Binary1936/machine-party-8p) detected - lobbies here can hold up to %d players." % br.player_cap()
+		return "8 Player mod: not installed. Viper Menu works alongside Binary1936's machine-party-8p if you install it.", MUTED)
 	header(p, "Session")
 	live(p, func() -> String:
 		var mg: String = app.g.minigame_cls()
@@ -894,7 +902,7 @@ func _build_info(p: VBoxContainer) -> void:
 
 func _open_url(url: String) -> void:
 	if url.is_empty():
-		app.note("no link set - edit GITHUB_URL / UC_URL at the top of main.gd")
+		app.note("no link set - edit GITHUB_URL / YOUTUBE_URL at the top of main.gd")
 		return
 	OS.shell_open(url)
 

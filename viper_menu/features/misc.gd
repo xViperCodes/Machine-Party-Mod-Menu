@@ -104,6 +104,13 @@ func _process(delta: float) -> void:
 			me.collision_layer = 0
 			me.collision_mask = 0
 		me.set_physics_process(false)
+	# Some minigames switch physics / collision back on at round start, which
+	# made noclip fight gravity. Keep them off while noclip is on.
+	if me.is_physics_processing():
+		me.set_physics_process(false)
+	if me is CollisionObject3D and (me.collision_layer != 0 or me.collision_mask != 0):
+		me.collision_layer = 0
+		me.collision_mask = 0
 	if app.ui.is_open or (_con_input != null and _con_input.has_focus()):
 		return
 	if _fc_cam != null:
@@ -111,25 +118,33 @@ func _process(delta: float) -> void:
 		if me is CharacterBody3D:
 			me.velocity = Vector3.ZERO
 		return
+	# W/S/A/D move flat along the ground relative to where the camera faces
+	# (so a camera tilted down doesn't push you into the floor), Space goes
+	# up, Shift goes down.
 	var cam: Camera3D = app.g.camera()
 	var basis: Basis = cam.global_transform.basis if cam != null else me.global_transform.basis
+	var fwd := Vector3(-basis.z.x, 0.0, -basis.z.z)
+	if fwd.length() < 0.15:
+		# Camera looking straight down: "forward" is the top of the screen.
+		fwd = Vector3(basis.y.x, 0.0, basis.y.z)
+	fwd = fwd.normalized() if fwd.length() > 0.001 else Vector3.FORWARD
+	var right := Vector3(basis.x.x, 0.0, basis.x.z)
+	right = right.normalized() if right.length() > 0.001 else fwd.cross(Vector3.UP).normalized()
 	var dir := Vector3.ZERO
-	if Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP):
-		dir -= basis.z
-	if Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN):
-		dir += basis.z
-	if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT):
-		dir -= basis.x
-	if Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT):
-		dir += basis.x
+	if Input.is_physical_key_pressed(KEY_W):
+		dir += fwd
+	if Input.is_physical_key_pressed(KEY_S):
+		dir -= fwd
+	if Input.is_physical_key_pressed(KEY_A):
+		dir -= right
+	if Input.is_physical_key_pressed(KEY_D):
+		dir += right
 	if Input.is_physical_key_pressed(KEY_SPACE):
 		dir += Vector3.UP
-	if Input.is_physical_key_pressed(KEY_CTRL) or Input.is_physical_key_pressed(KEY_C):
+	if Input.is_physical_key_pressed(KEY_SHIFT):
 		dir -= Vector3.UP
 	if dir.length() > 0.001:
 		var speed := float(app.cfg.val("misc.noclip_speed", 12.0))
-		if Input.is_physical_key_pressed(KEY_SHIFT):
-			speed *= 2.5
 		me.global_position += dir.normalized() * speed * delta
 	if me is CharacterBody3D:
 		me.velocity = Vector3.ZERO
@@ -425,7 +440,8 @@ func _on_submit(text: String) -> void:
 	match cmd:
 		"help":
 			_print("help, clear, mods, players, tp <x> <y> <z>, tpto <name>, bring <name>, pos, host, unload, panic")
-			_print("freecam, shove <name>, freeze <name>, smite <name>, score <name> <points>, skip, skip game, restart, end, end now")
+			_print("freecam, shove <name>, freeze <name>, smite <name>, kick <name>, score <name> <points>, skip, skip game, restart, end, end now")
+			_print("servers, join <room id>, roomid, public, private")
 			_print("anything else is a GDScript expression, e.g.  me.global_position  or  mg.round_instructions")
 		"clear":
 			_con_log.clear()
@@ -457,6 +473,27 @@ func _on_submit(text: String) -> void:
 		"freecam":
 			app.cfg.put("misc.freecam", not bool(app.cfg.val("misc.freecam", false)))
 			_print("freecam " + ("on" if app.cfg.val("misc.freecam", false) else "off"))
+		"kick":
+			var id := _find_player(" ".join(args))
+			if id < 0 or id == app.g.my_id():
+				_print("no player matching '%s'" % " ".join(args))
+			else:
+				app.mod("players").kick(id)
+		"servers":
+			var br = app.mod("browser")
+			br.refresh()
+			await get_tree().create_timer(2.5).timeout
+			for r in br.results():
+				_print(" %d  %s  %d/%d%s" % [r["id"], r["name"], r["players"], r["max"], "" if r["compatible"] else "  (other version)"])
+			_print(br._status)
+		"join":
+			app.mod("browser").join_by_code(" ".join(args))
+		"roomid":
+			app.mod("browser").copy_room_id()
+		"public":
+			app.mod("browser").publish()
+		"private":
+			app.mod("browser").unpublish()
 		"shove", "freeze", "smite":
 			var id := _find_player(" ".join(args))
 			if id < 0:
@@ -516,7 +553,7 @@ func _eval(text: String) -> void:
 func build_ui(ui, page) -> void:
 	ui.header(page, "Movement")
 	ui.check(page, "Noclip (beta)", "misc.noclip",
-		"Fly through walls: WASD/arrows to move, Space up, Ctrl or C down, Shift faster. Turns your character's collision and physics off while on.")
+		"Fly through walls: W forward, S back, A left, D right, Space up, Shift down. Turns your character's collision and physics off while on.")
 	ui.slider(page, "Noclip speed", "misc.noclip_speed", 2.0, 60.0, 0.5, "", "%.1f m/s")
 	ui.keybind(page, "noclip_toggle")
 

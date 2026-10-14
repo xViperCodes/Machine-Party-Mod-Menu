@@ -9,11 +9,11 @@ extends Node
 
 const MOD_ID := "viper_menu"
 const MOD_NAME := "Viper Menu"
-const VERSION := "v0.2"
+const VERSION := "v0.3"
 const AUTHOR := "xViperCodes"
-## Fill these in to make the Info tab buttons work.
-const GITHUB_URL := ""
-const UC_URL := ""
+## Info tab buttons.
+const GITHUB_URL := "https://github.com/xViperCodes/Machine-Party-Mod-Menu"
+const YOUTUBE_URL := "https://www.youtube.com/@xViperCodes"
 
 ## [module key, path relative to this folder]. Order matters: core first.
 const MODULES := [
@@ -25,6 +25,7 @@ const MODULES := [
 	["debug", "features/debug_flags.gd"],
 	["minigames", "features/minigames.gd"],
 	["session", "features/session.gd"],
+	["browser", "features/server_browser.gd"],
 	["players", "features/players.gd"],
 	["esp", "features/esp.gd"],
 	["aimbot", "features/aimbot.gd"],
