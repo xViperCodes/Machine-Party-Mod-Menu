@@ -99,7 +99,7 @@ https://github.com/user-attachments/assets/6015d4f8-18cb-45a1-8c89-79bd60456622
 
 ### Misc
 - **Noclip**: fly through walls with adjustable speed. W forward, S back, A left, D right, Space up, Shift down.
-- **Freecam** (F6): mouse to look, WASD to fly, Space/E up, Ctrl/C/Q down, Shift faster, Alt slower, mouse wheel for speed. "Follow player" mode orbits any player. Your character is frozen while flying (optional). Only your screen changes.
+- **Freecam** (F6): mouse to look, W forward, S back, A left, D right, Space up, Shift down, mouse wheel for speed. "Follow player" mode orbits any player. Your character is frozen while flying (optional). Only your screen changes.
 - **Console** (F8): see the [command list](#console-commands) below
 - Teleport loose objects to any player
 
@@ -219,7 +219,6 @@ Also useful: `%APPDATA%\Godot\app_userdata\Machine Party\modloader.log` shows wh
 - ESP, aimbot and solver overlays are made for online play. Local couch mode renders split-screen, so they won't line up there.
 - A Debug flag shows "n/a" if your game version doesn't have it.
 - Freecam only changes your own screen.
-- **8 players:** the [8 Player mod](https://github.com/Binary1936/machine-party-8p) by Binary1936 patches the game's own files and needs every player in a 5-8 lobby to have it, so it isn't built into Viper Menu. Install it separately - Viper Menu works alongside it, and public lobbies can then go up to 8 players.
 
 ---
 
@@ -234,7 +233,6 @@ Also useful: `%APPDATA%\Godot\app_userdata\Machine Party\modloader.log` shows wh
 - **Obsidian420** - Inspiration & a lot of the cheat/solver ideas
 - **[Krunk-theduck](https://github.com/Krunk-theduck)** - [MachinePartyModLoader](https://github.com/Krunk-theduck/MachinePartyModLoader)
 - **J_axon** and **Krunk** - [MachineParty+](https://github.com/Ghostx10742/MachineParty-Plus) - the server browser and public lobbies are adapted from it (MIT License, see [THIRD_PARTY_NOTICES.md](viper_menu/THIRD_PARTY_NOTICES.md))
-- **[Binary1936](https://github.com/Binary1936)** - [machine-party-8p](https://github.com/Binary1936/machine-party-8p) - the 8 Player mod Viper Menu works alongside
 - **xViperCodes** - Viper Menu
 
 ---

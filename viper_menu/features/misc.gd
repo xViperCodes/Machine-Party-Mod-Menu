@@ -228,24 +228,22 @@ func _tick_freecam(delta: float) -> void:
 	var pos: Vector3 = _fc_cam.global_position
 	if not busy:
 		var dir := Vector3.ZERO
-		if Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP):
+		# Same keys as noclip: W/S/A/D, Space up, Shift down. W flies where
+		# you're looking; the mouse wheel sets the speed.
+		if Input.is_physical_key_pressed(KEY_W):
 			dir -= basis.z
-		if Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN):
+		if Input.is_physical_key_pressed(KEY_S):
 			dir += basis.z
-		if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT):
+		if Input.is_physical_key_pressed(KEY_A):
 			dir -= basis.x
-		if Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT):
+		if Input.is_physical_key_pressed(KEY_D):
 			dir += basis.x
-		if Input.is_physical_key_pressed(KEY_SPACE) or Input.is_physical_key_pressed(KEY_E):
+		if Input.is_physical_key_pressed(KEY_SPACE):
 			dir += Vector3.UP
-		if Input.is_physical_key_pressed(KEY_CTRL) or Input.is_physical_key_pressed(KEY_C) or Input.is_physical_key_pressed(KEY_Q):
+		if Input.is_physical_key_pressed(KEY_SHIFT):
 			dir -= Vector3.UP
 		if dir.length() > 0.001:
 			var speed := float(app.cfg.val("misc.freecam_speed", 10.0))
-			if Input.is_physical_key_pressed(KEY_SHIFT):
-				speed *= 3.0
-			elif Input.is_physical_key_pressed(KEY_ALT):
-				speed *= 0.25
 			pos += dir.normalized() * speed * delta
 	_fc_cam.global_transform = Transform3D(basis, pos)
 
@@ -559,7 +557,7 @@ func build_ui(ui, page) -> void:
 
 	ui.header(page, "Freecam")
 	ui.check(page, "Freecam", "misc.freecam",
-		"Detached camera. Mouse to look, WASD to fly, Space/E up, Ctrl/C/Q down, Shift faster, Alt slower, wheel changes speed (or distance in follow mode). Only your screen changes - nobody else sees it.")
+		"Detached camera. Mouse to look, W forward, S back, A left, D right, Space up, Shift down, mouse wheel changes speed (or distance in follow mode). Only your screen changes - nobody else sees it.")
 	ui.option_dynamic(page, "Mode", "misc.freecam_mode", func() -> Array: return [[0, "Free fly"], [1, "Follow player"]])
 	ui.option_dynamic(page, "Follow", "misc.freecam_target", _targets)
 	ui.slider(page, "Fly speed", "misc.freecam_speed", 1.0, 80.0, 0.5, "", "%.1f m/s")

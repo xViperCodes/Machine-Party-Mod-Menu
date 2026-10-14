@@ -40,7 +40,8 @@ and use Settings > Menu scale to make it bigger or smaller.
 - **Kick:** a player dropdown and Kick button in the Players tab (plus `kick <name>` in the console).
 - **Noclip:** new controls (W/A/S/D, Space up, Shift down), moves flat relative to the camera and
   stays on through round starts.
-- **Info tab:** GitHub and YouTube buttons, credits, and a note when the 8 Player mod is installed.
+- **Info tab:** GitHub and YouTube buttons and credits.
+- **Freecam:** same keys as noclip (W/A/S/D, Space up, Shift down); the mouse wheel sets the speed.
 - **Console:** `kick`, `servers`, `join <room id>`, `roomid`, `public`, `private`.
 
 ## New in v0.2
@@ -51,8 +52,8 @@ and use Settings > Menu scale to make it bigger or smaller.
   everyone else. Smite is greyed out in minigames where the game decides eliminations itself
   (Chisel Gauntlet, Smoke Break...). Shove falls back to a short teleport push where a minigame
   has no shove of its own.
-- **Misc tab:** Freecam (F6). Mouse to look, WASD to fly, Space/E up, Ctrl/C/Q down, Shift faster,
-  Alt slower, mouse wheel = speed. "Follow player" orbits a player instead (wheel = distance).
+- **Misc tab:** Freecam (F6). Mouse to look, W forward, S back, A left, D right, Space up,
+  Shift down, mouse wheel = speed. "Follow player" orbits a player instead (wheel = distance).
   Your character is frozen while flying unless you turn that off. Only your screen changes.
 - **Console:** `freecam`, `shove/freeze/smite <name>`, `score <name> <points>`, `skip`, `skip game`,
   `restart`, `end`, `end now`.
@@ -74,9 +75,6 @@ The host runs the game logic, so some features need you to be host:
   doesn't answer can hang - remove the bot.
 - ESP / aimbot / solver overlays target online play; local couch mode renders split-screen.
 - The **Debug Mode** flag shows `n/a` if your game version has no matching variable.
-- **8 players:** the 8 Player mod (Binary1936/machine-party-8p) patches 56 of the game's own files and
-  needs every player on it, so it isn't built into Viper Menu. Install it separately; Viper Menu runs
-  alongside it and lets public lobbies go up to 8.
 
 ## Credits
 - xViperCodes - Viper Menu

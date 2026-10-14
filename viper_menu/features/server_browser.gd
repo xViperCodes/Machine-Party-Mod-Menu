@@ -112,23 +112,18 @@ func is_public() -> bool:
 	return id > 0 and steam_ready() and str(steam().getLobbyData(id, KEY_PUB)) == "1"
 
 
-## Machine Party's own player cap, raised when the 8 Player mod is installed.
+## Machine Party's own player cap (NetworkManager.MAX_PLAYERS).
 func player_cap() -> int:
 	var nm: Node = app.g.al("NetworkManager")
 	var mx := int(app.g.script_consts(nm).get("MAX_PLAYERS", VANILLA_CAP))
 	return maxi(mx, 1)
 
 
-func has_8p() -> bool:
-	var ver := str(app.g.gv(app.g.al("Globals"), "game_version", ""))
-	return ver.contains("-8P") or player_cap() > VANILLA_CAP
-
-
 func _game_version() -> String:
 	return str(app.g.gv(app.g.al("Globals"), "game_version", ""))
 
 
-## "v2.1.2-8P-v1.5" and "v2.1.2" are the same game underneath.
+## Ignore extra tags other mods add to the version string (e.g. "v2.1.2-8P-...").
 func _base_version(v: String) -> String:
 	var i := v.find("-8P")
 	return v.substr(0, i) if i >= 0 else v
@@ -428,7 +423,7 @@ func build_ui(ui, page) -> void:
 	ui.buttons(page, [["Copy room ID", copy_room_id]])
 	ui.text_input(page, "Lobby name", "sb.name", "your name's lobby")
 	ui.spin(page, "Max players", "sb.max", 1, 8,
-		"Capped at 4 unless the 8 Player mod is installed.")
+		"Capped at the game's own player limit (4).")
 	ui.check(page, "Allow joining mid-match", "sb.mid",
 		"Off: the lobby drops off the browser while a match is running.")
 	ui.buttons(page, [
