@@ -201,7 +201,6 @@ These haven't been fully tested in real lobbies yet. If you try them, let me kno
 - The Filter auto-solve
 - Inside Job syringe container (host)
 - Smoke Break auto-exhale
-- Stable Footing solver
 - Table Manners as a client
 
 ### Reporting a bug?
