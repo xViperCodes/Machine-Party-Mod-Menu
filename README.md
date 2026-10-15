@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🐍 VIPER MENU v0.3.1
+# 🐍 VIPER MENU v0.3.2
 
 **Mod menu for Machine Party** - by **xViperCodes**
 
