@@ -5,17 +5,19 @@ extends Node
 ##  - Tunnel Hazard: TrainRaceNook.state (0 open = safe hiding spot, 1 closed = press).
 ##  - Stable Footing: the final pattern broadcasts the safe symbol (shown on the
 ##    big displays); every tile with another symbol is armed and drops 3s later.
-##  - Inside Job: the host gives the syringe to the Nth search overall
-##    (guaranteed_search_result), not to a particular container.
+##  - Inside Job: no container holds the syringe - the host hands it to the
+##    Nth search overall (guaranteed_search_result). As host the mod picks a
+##    container and steers that number so the syringe comes out of it.
 ##  - Table Manners: the host runs the coach's timer; clients see his
 ##    "reading blend" animation parameter.
-##  - The Filter: item types 0-3 burn, 4-7 recycle.
+##  - The Filter: BurnRecyclePlayer.items[active_item_index] is the item under
+##    the press; its burnable flag says which lever. Auto-solve calls the same
+##    burn_rpc / recycle_rpc the buttons call.
 
 var app = null
 
 const SYMBOL_NAMES := ["All", "Cross", "Square", "Circle"]
 const SYMBOL_COLORS := [Color("#4deeea"), Color("#ffe700"), Color("#f000ff")]
-const MEASURE := ["Item Spawn Marker", "Piston", "Player", "Camera"]
 const GOLD := Color("#ffd23f")
 const RED := Color("#ff3030")
 const GREEN := Color("#40ff40")
@@ -36,6 +38,13 @@ var _light: OmniLight3D = null
 var _fow_hidden: Array = []
 var _env_saved: Dictionary = {}
 var _ij_esp_saved = null
+var _ij_mg: Node = null
+var _ij_pick: Node = null          # the container the syringe will come out of (host)
+var _ij_orig := -1                 # the game's own pick, restored when rigging is off
+var _ij_rigged := false
+var _ij_started: Dictionary = {}   # container instance id -> time its search started
+var _ij_conts: Array = []
+var _ij_scan_t := 0.0
 
 # table manners
 var _tm_looking := false
@@ -50,8 +59,6 @@ var _tm_mg: Node = null
 
 # filter
 var _f_t := 0.0
-var _f_pressing := ""
-var _f_press_t := 0.0
 var _f_fired_this_hold := false
 var _f_status := "idle"
 
@@ -68,24 +75,23 @@ func setup() -> void:
 	c.def("sol.stable.symbol", "All")
 	c.def("sol.stable.dim", true)
 	c.def("sol.ij.on", true)
+	c.def("sol.ij.rig", true)
 	c.def("sol.ij.hide_rest", false)
 	c.def("sol.ij.fullbright", false)
 	c.def("sol.ij.range", 40.0)
 	c.def("sol.ij.energy", 2.0)
 	c.def("sol.ij.ambient", true)
 	c.def("sol.tm.hud", true)
+	c.def("sol.smoke.hud", true)
+	c.def("sol.smoke.auto", false)
+	c.def("sol.smoke.at", 0.85)
 	c.def("sol.tm.look_lasts", 2.0)
 	c.def("sol.tm.nudge", 0.0)
 	c.def("sol.tm.red_at", 0.75)
 	c.def("sol.filter.on", false)
 	c.def("sol.filter.hold", true)
 	c.def("sol.filter.repeat", true)
-	c.def("sol.filter.swap", false)
 	c.def("sol.filter.delay", 0.18)
-	c.def("sol.filter.measure", "Player")
-	c.def("sol.filter.radius", 3.0)
-	c.def("sol.filter.burn_action", "action_1")
-	c.def("sol.filter.recycle_action", "action_2")
 	app.hk.register("filter_solve", "The Filter: auto-solve (hold)", app.hk.kb(KEY_G), "Solvers")
 	app.hk.register("tm_up", "Table Manners: he looked up", app.hk.kb(KEY_L), "Solvers")
 	app.hk.register("tm_away", "Table Manners: he looked away", app.hk.kb(KEY_K), "Solvers")
@@ -100,8 +106,8 @@ func setup() -> void:
 
 
 func disable_all() -> void:
-	for k in ["sol.chisel.on", "sol.tunnel.on", "sol.stable.use_drops", "sol.stable.hide", "sol.ij.on",
-			"sol.ij.fullbright", "sol.tm.hud", "sol.filter.on"]:
+	for k in ["sol.chisel.on", "sol.tunnel.on", "sol.stable.use_drops", "sol.stable.hide", "sol.ij.on", "sol.ij.rig",
+			"sol.ij.fullbright", "sol.tm.hud", "sol.filter.on", "sol.smoke.auto"]:
 		app.cfg.put(k, false)
 	app.cfg.put("sol.stable.symbol", "All")
 	_cleanup()
@@ -169,8 +175,11 @@ func _process(delta: float) -> void:
 			_chisel_tick()
 		"KnifeAtTheOfficeMinigame":
 			_ij_tick()
+			_ij_rig(delta)
 		"GreenPeaMinigame":
 			_tm_tick()
+		"SmokeBreakMinigame":
+			_smoke_tick()
 		"BurnRecycleMinigame":
 			_filter_tick(delta)
 
@@ -363,30 +372,122 @@ func syringe_state() -> Dictionary:
 		return {}
 	if not app.g.is_host():
 		return {"host": false}
-	var target := int(app.g.gv(mg, "guaranteed_search_result", -1))
 	var done := int(app.g.gv(mg, "containers_searched", 0))
 	var found := bool(app.g.gv(mg, "hunting_phase", false)) or bool(app.g.gv(mg, "projector_started", false))
-	return {"host": true, "target": target, "done": done, "left": target - done, "found": found}
+	var pick: Node = ij_pick()
+	return {"host": true, "done": done, "found": found, "pick": pick,
+		"rigged": bool(app.cfg.val("sol.ij.rig", true)) and pick != null}
 
 
-func nudge_syringe(d: int) -> void:
+func ij_pick() -> Node:
+	return _ij_pick if app.g.valid(_ij_pick) and not bool(app.g.gv(_ij_pick, "searched", false)) else null
+
+
+func _ij_containers(mg: Node) -> Array:
+	if _ij_scan_t <= 0.0 or _ij_conts.is_empty():
+		_ij_conts = app.g.find_cls(mg, ["KnifeAtTheOfficeSearchable"])
+		_ij_scan_t = 1.0
+	var out: Array = []
+	for c in _ij_conts:
+		if app.g.valid(c):
+			out.append(c)
+	return out
+
+
+func _ij_free(mg: Node) -> Array:
+	var out: Array = []
+	for c in _ij_containers(mg):
+		if not bool(app.g.gv(c, "searched", false)) and not bool(app.g.gv(c, "in_use", false)):
+			out.append(c)
+	return out
+
+
+## Host: put the syringe in a different container (random, or the one nearest me).
+func ij_reroll(nearest: bool = false) -> void:
 	var st := syringe_state()
+	if st.is_empty():
+		app.note("syringe: not in Inside Job")
+		return
 	if not st.get("host", false):
 		app.note("syringe: host only")
 		return
+	var free := _ij_free(app.g.minigame())
+	if free.is_empty():
+		app.note("syringe: no unsearched containers left")
+		return
+	var me: Node3D = app.g.my_char()
+	if nearest and me != null:
+		var best: Node = null
+		var bd := INF
+		for c in free:
+			var d: float = (c as Node3D).global_position.distance_to(me.global_position)
+			if d < bd:
+				bd = d
+				best = c
+		_ij_pick = best
+		app.note("syringe moved to the container nearest you (%.0f m)" % bd)
+	else:
+		_ij_pick = free.pick_random()
+		app.note("syringe moved to another container")
+
+
+## Host only. The game gives the syringe to whoever completes search number
+## guaranteed_search_result. Keep that number out of reach until someone is
+## searching the picked container, then set it to land on exactly that search
+## (counting searches that started before it and will finish first).
+func _ij_rig(delta: float) -> void:
+	_ij_scan_t -= delta
 	var mg: Node = app.g.minigame()
-	var nv := maxi(int(st["done"]) + 1, int(st["target"]) + d)
-	mg.set("guaranteed_search_result", nv)
-	app.note("syringe now on search #%d" % nv)
-
-
-func syringe_to_next() -> void:
-	var st := syringe_state()
-	if not st.get("host", false):
-		app.note("syringe: host only")
+	if mg != _ij_mg:
+		_ij_mg = mg
+		_ij_pick = null
+		_ij_orig = -1
+		_ij_rigged = false
+		_ij_started.clear()
+		_ij_conts.clear()
+	if mg == null or not app.g.is_host() or not ("guaranteed_search_result" in mg):
 		return
-	app.g.minigame().set("guaranteed_search_result", int(st["done"]) + 1)
-	app.note("the next search (anyone's) gets the syringe - be first")
+	var target := int(mg.get("guaranteed_search_result"))
+	if target < 0:
+		return
+	if _ij_orig < 0:
+		_ij_orig = target
+	var done := int(app.g.gv(mg, "containers_searched", 0))
+	if not bool(app.cfg.val("sol.ij.rig", true)):
+		if _ij_rigged:
+			_ij_rigged = false
+			mg.set("guaranteed_search_result", maxi(_ij_orig, done + 1))
+		return
+	if bool(app.g.gv(mg, "hunting_phase", false)) or bool(app.g.gv(mg, "projector_started", false)):
+		return
+	var conts := _ij_containers(mg)
+	if conts.is_empty():
+		return
+	var now := Time.get_ticks_msec()
+	for c in conts:
+		var id: int = c.get_instance_id()
+		if bool(app.g.gv(c, "in_use", false)):
+			if not _ij_started.has(id):
+				_ij_started[id] = now
+		else:
+			_ij_started.erase(id)
+	if ij_pick() == null:
+		var free := _ij_free(mg)
+		if free.is_empty():
+			return
+		_ij_pick = free.pick_random()
+	var pick := _ij_pick
+	var want := done + 100000
+	if bool(app.g.gv(pick, "in_use", false)):
+		var mine: int = _ij_started.get(pick.get_instance_id(), now)
+		var ahead := 0
+		for c in conts:
+			if c != pick and bool(app.g.gv(c, "in_use", false)) and int(_ij_started.get(c.get_instance_id(), now)) < mine:
+				ahead += 1
+		want = done + 1 + ahead
+	if target != want:
+		mg.set("guaranteed_search_result", want)
+	_ij_rigged = true
 
 
 func _ij_tick() -> void:
@@ -444,31 +545,28 @@ func _draw_ij(c: Control, cam: Camera3D) -> void:
 	var st := syringe_state()
 	if st.is_empty():
 		return
-	var vp := c.get_viewport_rect().size
 	var rows: Array = []
 	if not st.get("host", false):
-		rows.append(["Syringe: host only (the host decides who gets it)", Color(1, 1, 1, 0.7)])
+		rows.append(["Syringe: only the host can see it (the host's game decides who gets it)", Color(1, 1, 1, 0.7)])
 	elif st.get("found", false):
 		rows.append(["Syringe has been found", Color(1, 1, 1, 0.7)])
+	elif not st.get("rigged", false):
+		rows.append(["Syringe: turn on \"Put the syringe in one container\" to see where it is", Color(1, 1, 1, 0.7)])
 	else:
-		var left := int(st["left"])
-		rows.append(["Syringe: search #%d   (%d done)" % [int(st["target"]), int(st["done"])], Color.WHITE])
-		if left <= 1:
-			rows.append(["NEXT SEARCH GETS IT", GOLD])
-		else:
-			rows.append(["%d searches to go" % left, Color.WHITE])
+		var pick: Node3D = st["pick"]
+		var me: Node3D = app.g.my_char()
+		var dist := "" if me == null else "  (%.0f m)" % pick.global_position.distance_to(me.global_position)
+		rows.append(["Syringe is in the marked container" + dist, GOLD])
 	app.mod("overlay").hud_center(c, 70.0, rows, 18)
-	if not st.get("host", false) or st.get("found", false) or int(st.get("left", 99)) > 1:
+	if not st.get("rigged", false) or st.get("found", false):
 		return
-	for n in app.g.find_cls(app.g.minigame(), ["KnifeAtTheOfficeSearchable"]):
-		if bool(app.g.gv(n, "searched", false)) or bool(app.g.gv(n, "in_use", false)):
-			continue
-		var p: Vector3 = n.global_position + Vector3.UP * 0.6
-		if cam.is_position_behind(p):
-			continue
-		var sp := cam.unproject_position(p)
-		c.draw_circle(sp, 8.0, GOLD)
-		app.mod("overlay").text_center(c, sp + Vector2(0, -12), "SYRINGE", GOLD, 14)
+	var p: Vector3 = (st["pick"] as Node3D).global_position + Vector3.UP * 0.6
+	if cam.is_position_behind(p):
+		return
+	var sp := cam.unproject_position(p)
+	c.draw_circle(sp, 10.0, GOLD)
+	c.draw_arc(sp, 18.0, 0.0, TAU, 32, GOLD, 3.0)
+	app.mod("overlay").text_center(c, sp + Vector2(0, -24), "SYRINGE", GOLD, 18)
 
 
 # ==== Table Manners ===================================================================
@@ -566,6 +664,71 @@ func _draw_tm(c: Control) -> void:
 	app.mod("overlay").hud_center(c, 70.0, rows, 18)
 
 
+# ==== Smoke Break ======================================================================
+## Your drag fills while you hold the button; past 100% you choke (locked out
+## for choke_timeout seconds). These numbers only exist on your own machine -
+## other players' copies only see their smoke / cough particles.
+
+func smoke_state() -> Dictionary:
+	var me: Node = app.g.my_char()
+	if me == null or app.g.cls(me) != "SmokeBreakPlayer":
+		return {}
+	return {
+		"drag": float(app.g.gv(me, "drag_progress", 0.0)),
+		"choke": float(app.g.gv(me, "choke_timer", 0.0)),
+		"choke_max": float(app.g.gv(me, "choke_timeout", 3.0)),
+		"left": float(app.g.gv(me, "cigarette_left", 1.0)),
+		"inhaling": bool(app.g.gv(me, "inhaling", false)),
+		"active": bool(app.g.gv(me, "active", false)) and not bool(app.g.gv(me, "finished", false)),
+	}
+
+
+## Auto-exhale: let go for you just before the drag would make you choke.
+func _smoke_tick() -> void:
+	if not bool(app.cfg.val("sol.smoke.auto", false)):
+		return
+	var me: Node = app.g.my_char()
+	var st := smoke_state()
+	if st.is_empty() or not st["active"] or not st["inhaling"]:
+		return
+	if st["drag"] >= float(app.cfg.val("sol.smoke.at", 0.85)):
+		# Same state change the game makes when you release the button.
+		me.set("inhaling", false)
+		me.set("exhaling", true)
+		var anim = me.get("anim_handler")
+		if app.g.valid(anim) and anim.has_method("start_exhaling_cigarette"):
+			app.g._rpc(anim, "start_exhaling_cigarette", [])
+
+
+func _draw_smoke(c: Control) -> void:
+	var st := smoke_state()
+	if st.is_empty():
+		return
+	var ov = app.mod("overlay")
+	var vp := c.get_viewport_rect().size
+	var w := float(ov._sz(360))
+	var h := float(ov._sz(22))
+	var x := (vp.x - w) * 0.5
+	var y := vp.y * 0.78
+	var drag: float = clampf(st["drag"], 0.0, 1.0)
+	var col := GREEN
+	if drag > 0.85:
+		col = RED
+	elif drag > 0.6:
+		col = GOLD
+	var label := "DRAG %d%%" % int(round(st["drag"] * 100.0))
+	if st["choke"] > 0.0:
+		col = RED
+		drag = st["choke"] / maxf(st["choke_max"], 0.01)
+		label = "CHOKING  %.1fs" % st["choke"]
+	c.draw_rect(Rect2(x - 4, y - 4, w + 8, h + 8), Color(0, 0, 0, 0.6))
+	c.draw_rect(Rect2(x, y, w * drag, h), col)
+	c.draw_rect(Rect2(x + w * 0.999, y - 2, 2, h + 4), Color(1, 1, 1, 0.8))
+	ov.text_center(c, Vector2(vp.x * 0.5, y - float(ov._sz(10))), label, Color.WHITE, 18)
+	var auto: String = "   |   auto-exhale at %d%%" % int(float(app.cfg.val("sol.smoke.at", 0.85)) * 100.0) if bool(app.cfg.val("sol.smoke.auto", false)) else ""
+	ov.text_center(c, Vector2(vp.x * 0.5, y + h + float(ov._sz(22))), "cigarette left %d%%%s" % [int(st["left"] * 100.0), auto], Color(1, 1, 1, 0.75), 14)
+
+
 # ==== The Filter ========================================================================
 
 ## "burn", "recycle" or "" for an item node / item type value.
@@ -588,6 +751,8 @@ func kind_of_value(v) -> String:
 func kind_of(n) -> String:
 	if not app.g.valid(n):
 		return ""
+	if "burnable" in n:
+		return "burn" if bool(n.get("burnable")) else "recycle"
 	for p in ["type", "item_type", "_type", "current_type", "launch_type", "kind"]:
 		if p in n:
 			var k := kind_of_value(n.get(p))
@@ -605,113 +770,74 @@ func kind_of(n) -> String:
 
 
 func _my_filter_player() -> Node:
-	return app.g.my_char()
+	var me: Node = app.g.my_char()
+	if me != null and app.g.cls(me) == "BurnRecyclePlayer":
+		return me
+	return app.g.first_cls(app.g.minigame(), "BurnRecyclePlayer") if me == null else me
 
 
-## Best guess for the item in front of me. Returns [kind, how].
+## The item sitting under my press: BurnRecyclePlayer.items[active_item_index].
+## Returns [kind, item node or null, why-not text].
 func current_item() -> Array:
 	var me := _my_filter_player()
 	if me == null:
-		return ["", "no player found"]
-	# 1) a queue-like array on the player whose first entry is an item type
-	var s = me.get_script()
-	if s != null:
-		for prop in s.get_script_property_list():
-			var pn := str(prop.get("name", ""))
-			var low := pn.to_lower()
-			if not (low.contains("queue") or low.contains("item")):
-				continue
-			var v = me.get(pn)
-			if v is Array and not v.is_empty():
-				var front = v[0]
-				var k := kind_of(front) if front is Object else kind_of_value(front)
-				if k != "":
-					return [k, "player.%s[0]" % pn]
-	# 2) nearest typed item to the reference point
-	var ref := _ref_point(me)
-	var radius := float(app.cfg.val("sol.filter.radius", 3.0))
-	var best := ""
-	var best_d := INF
-	for n in app.g.descendants(app.g.minigame()):
-		if not (n is Node3D) or n == me:
-			continue
-		var k := kind_of(n)
-		if k == "":
-			continue
-		if not n.is_visible_in_tree():
-			continue
-		var d: float = n.global_position.distance_to(ref)
-		if d <= radius and d < best_d:
-			best_d = d
-			best = k
-	if best != "":
-		return [best, "nearest item (%.1fm)" % best_d]
-	return ["", "no item within %.1fm of %s" % [radius, str(app.cfg.val("sol.filter.measure", "Player"))]]
-
-
-func _ref_point(me: Node3D) -> Vector3:
-	match str(app.cfg.val("sol.filter.measure", "Player")):
-		"Camera":
-			var cam: Camera3D = app.g.camera()
-			if cam != null:
-				return cam.global_position
-		"Piston":
-			var presses = app.g.gv(app.g.minigame(), "presses", [])
-			var best: Vector3 = me.global_position
-			var bd := INF
-			if presses is Array:
-				for p in presses:
-					if app.g.valid(p):
-						var d: float = p.global_position.distance_to(me.global_position)
-						if d < bd:
-							bd = d
-							best = p.global_position
-			return best
-		"Item Spawn Marker":
-			for n in app.g.descendants(me):
-				if n is Node3D and (str(n.name).to_lower().contains("spawn") or str(n.name).to_lower().contains("marker")):
-					return n.global_position
-	return me.global_position
+		return ["", null, "no player found"]
+	var items = me.get("items")
+	if not (items is Dictionary):
+		return ["", null, "this isn't The Filter's player"]
+	var idx := int(app.g.gv(me, "active_item_index", 3))
+	var it = items.get(idx, null)
+	if not app.g.valid(it):
+		return ["", null, "waiting for the next item"]
+	var k := kind_of(it)
+	return [k, it, "" if k != "" else "unknown item"]
 
 
 func _filter_tick(delta: float) -> void:
-	if _f_pressing != "":
-		_f_press_t += delta
-		if _f_press_t >= 0.06:
-			_release_filter()
 	if not bool(app.cfg.val("sol.filter.on", false)) or app.ui.is_open:
 		_f_status = "off"
+		return
+	if app.g.minigame_cls() != "BurnRecycleMinigame":
+		_f_status = "not in The Filter"
 		return
 	var need_hold := bool(app.cfg.val("sol.filter.hold", true))
 	var held: bool = app.hk.held("filter_solve")
 	if need_hold and not held:
+		_f_fired_this_hold = false
 		_f_status = "waiting for %s" % app.hk.bind_name(app.hk.bind_of("filter_solve"))
 		return
 	if not bool(app.cfg.val("sol.filter.repeat", true)) and _f_fired_this_hold:
 		return
 	_f_t += delta
-	if _f_t < float(app.cfg.val("sol.filter.delay", 0.18)) or _f_pressing != "":
+	if _f_t < float(app.cfg.val("sol.filter.delay", 0.18)):
+		return
+	var me := _my_filter_player()
+	if me == null:
+		_f_status = "no player found"
+		return
+	if not bool(app.g.gv(me, "active", false)):
+		_f_status = "waiting for the round"
+		return
+	if bool(app.g.gv(me, "is_dead", false)):
+		_f_status = "you're out"
+		return
+	if float(app.g.gv(me, "penalty_timer", 0.0)) > 0.0:
+		_f_status = "penalty"
+		return
+	var r := current_item()
+	if r[0] == "":
+		_f_status = str(r[2])
 		return
 	_f_t = 0.0
-	var r := current_item()
-	_f_status = "%s via %s" % [r[0].to_upper() if r[0] != "" else "nothing", r[1]]
-	if r[0] == "":
-		return
 	var burn: bool = r[0] == "burn"
-	if bool(app.cfg.val("sol.filter.swap", false)):
-		burn = not burn
-	var action := str(app.cfg.val("sol.filter.burn_action" if burn else "sol.filter.recycle_action", "action_1"))
-	if InputMap.has_action(action):
-		Input.action_press(action)
-		_f_pressing = action
-		_f_press_t = 0.0
-		_f_fired_this_hold = true
+	# Same call the game makes when you press the burn / recycle button.
+	app.g._rpc(me, "burn_rpc" if burn else "recycle_rpc", [])
+	_f_fired_this_hold = true
+	_f_status = "sent %s" % ("BURN" if burn else "RECYCLE")
 
 
 func _release_filter() -> void:
-	if _f_pressing != "" and InputMap.has_action(_f_pressing):
-		Input.action_release(_f_pressing)
-	_f_pressing = ""
+	pass
 
 
 # ==== ESP tokens =========================================================================
@@ -732,16 +858,12 @@ func esp_token(tok: String, n: Node) -> Dictionary:
 			var p := coach_prediction()
 			return {"text": "LOOKING" if p["looking"] else "reading", "color": RED if p["looking"] else GREEN, "flag": p["looking"]}
 		"@syringe":
-			var st := syringe_state()
 			if bool(app.g.gv(n, "searched", false)):
 				return {"text": "searched", "color": Color(0.6, 0.6, 0.6), "flag": false}
-			if not st.get("host", false):
-				return {"text": "", "color": null, "flag": false}
-			if st.get("found", false):
-				return {"text": "", "color": null, "flag": false}
-			if int(st["left"]) <= 1:
-				return {"text": "SYRINGE - next search", "color": GOLD, "flag": true}
-			return {"text": "%d to go" % int(st["left"]), "color": null, "flag": false}
+			var st := syringe_state()
+			if st.get("rigged", false) and not st.get("found", false) and st["pick"] == n:
+				return {"text": "SYRINGE", "color": GOLD, "flag": true}
+			return {"text": "", "color": null, "flag": false}
 	return {"text": "?", "color": null, "flag": false}
 
 
@@ -762,6 +884,9 @@ func _draw(c: Control) -> void:
 				_draw_ij(c, cam)
 		"GreenPeaMinigame":
 			_draw_tm(c)
+		"SmokeBreakMinigame":
+			if bool(app.cfg.val("sol.smoke.hud", true)):
+				_draw_smoke(c)
 		"ChiselGauntletMinigame":
 			if bool(app.cfg.val("sol.chisel.on", true)):
 				_draw_chisel(c, cam)
@@ -806,25 +931,37 @@ func build_ui(ui, page) -> void:
 	ui.keybind(page, "stable_cycle")
 
 	ui.header(page, "Inside Job")
-	ui.note(page, "The syringe isn't hidden in one container: the host hands it to whoever completes the Nth search overall. As host you see N and how many searches are left; when the next search is the winner every unsearched container lights up.")
-	ui.check(page, "Highlight the syringe (host only)", "sol.ij.on")
+	ui.note(page, "The game doesn't hide the syringe in a container - the host hands it to whoever finishes the Nth search. As host, the mod picks one container and makes sure the syringe comes out of that one, so the ESP shows exactly where it is. Clients can't see it: their game never knows.")
+	ui.check(page, "Put the syringe in one container (host only)", "sol.ij.rig")
+	ui.check(page, "Highlight it", "sol.ij.on")
 	ui.check(page, "Hide the rest", "sol.ij.hide_rest", "Turns off the normal container ESP so only the syringe highlight shows.")
 	ui.buttons(page, [
-		["Index nudge -1", nudge_syringe.bind(-1), "Moves the syringe one search earlier."],
-		["Index nudge +1", nudge_syringe.bind(1), "Moves it one search later."],
-		["Give it to the next search", syringe_to_next, "Whoever finishes the next search gets it - make sure it's you."],
+		["Move it to the container nearest me", ij_reroll.bind(true)],
+		["Move it somewhere random", ij_reroll.bind(false)],
 	])
 	ui.live(page, func() -> String:
 		var st := syringe_state()
 		if st.is_empty():
 			return "Not in Inside Job."
 		if not st.get("host", false):
-			return "You're not the host - only the host knows the number."
-		return "Search #%d gets it - %d done, %d to go." % [int(st["target"]), int(st["done"]), int(st["left"])], ui.MUTED)
+			return "You're not the host - only the host's game decides who gets the syringe."
+		if st.get("found", false):
+			return "The syringe has been found."
+		if not st.get("rigged", false):
+			return "Off - the game's own random search number is in charge."
+		var me: Node3D = app.g.my_char()
+		var pick: Node3D = st["pick"]
+		return "Syringe container picked%s - %d searched so far." % ["" if me == null else " (%.0f m from you)" % pick.global_position.distance_to(me.global_position), int(st["done"])], ui.MUTED)
 	ui.check(page, "Fullbright", "sol.ij.fullbright", "Lights up the dark office and removes your fog of war.")
 	ui.slider(page, "Light range", "sol.ij.range", 5.0, 120.0, 1.0, "", "%.0f m")
 	ui.slider(page, "Light energy", "sol.ij.energy", 0.2, 8.0, 0.1)
 	ui.check(page, "Brighten ambient light too", "sol.ij.ambient")
+
+	ui.header(page, "Smoke Break")
+	ui.check(page, "Drag / choke meter", "sol.smoke.hud", "A bar under your character: how full your drag is (you choke past 100%) and the choke countdown.")
+	ui.check(page, "Auto-exhale before choking", "sol.smoke.auto", "Lets go of the drag for you when it reaches the level below. Hold the button to inhale as usual.")
+	ui.slider(page, "Exhale at", "sol.smoke.at", 0.5, 0.98, 0.01, "", "%.2f")
+	ui.note(page, "The drag and choke numbers only exist on your own game, so other players just show CHOKING / inhaling in the ESP.")
 
 	ui.header(page, "Table Manners")
 	ui.check(page, "Coach countdown HUD", "sol.tm.hud",
@@ -842,15 +979,14 @@ func build_ui(ui, page) -> void:
 		return "Learned from %d looks: reads last %.1f-%.1fs." % [_tm_reads.size(), mn, mx], ui.MUTED)
 
 	ui.header(page, "The Filter")
-	ui.note(page, "The Filter's player script wasn't in the files you sent, so this finds the item in front of you by reading item types (0-3 burn, 4-7 recycle). The status line shows what it found - send me BurnRecyclePlayer to make it exact.", ui.WARN)
-	ui.check(page, "Auto-solve", "sol.filter.on", "Sends burn or recycle for every item on the belt.")
+	ui.check(page, "Auto-solve", "sol.filter.on", "Reads the item under your press and pulls the right lever for you (the same call the game makes for your button).")
 	ui.keybind(page, "filter_solve")
-	ui.check(page, "Hold key to run", "sol.filter.hold")
-	ui.check(page, "Repeat while held", "sol.filter.repeat")
-	ui.check(page, "Swap buttons", "sol.filter.swap", "Use if it burns what should be recycled.")
-	ui.slider(page, "Input delay", "sol.filter.delay", 0.05, 1.0, 0.01, "Time between inputs.", "%.2f s")
-	ui.option(page, "Measure from", "sol.filter.measure", MEASURE)
-	ui.slider(page, "Search radius", "sol.filter.radius", 0.5, 15.0, 0.25, "", "%.2f m")
-	ui.text_input(page, "Burn input action", "sol.filter.burn_action", "action_1")
-	ui.text_input(page, "Recycle input action", "sol.filter.recycle_action", "action_2")
-	ui.live(page, func() -> String: return "Status: " + _f_status, ui.MUTED)
+	ui.check(page, "Hold key to run", "sol.filter.hold", "Off: runs on its own for the whole round.")
+	ui.check(page, "Repeat while held", "sol.filter.repeat", "Off: one item per key press.")
+	ui.slider(page, "Delay between items", "sol.filter.delay", 0.05, 1.0, 0.01, "Lower is faster.", "%.2f s")
+	ui.live(page, func() -> String:
+		if app.g.minigame_cls() != "BurnRecycleMinigame":
+			return "Not in The Filter."
+		var r := current_item()
+		var now: String = str(r[0]).to_upper() if r[0] != "" else str(r[2])
+		return "Under the press: %s   |   %s" % [now, _f_status], ui.MUTED)

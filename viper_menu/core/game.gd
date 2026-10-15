@@ -9,6 +9,7 @@ var app = null
 var _chars: Dictionary = {}
 var _chars_time: float = -1.0
 var _scan_interval := 0.25
+var _chars_root: Node = null
 
 
 # --- autoloads & safe access -------------------------------------------------
@@ -220,7 +221,13 @@ func is_bot_id(id: int) -> bool:
 ## Node3D with a valid player_presence (that's how every minigame player works).
 func characters() -> Dictionary:
 	var now := Time.get_ticks_msec() / 1000.0
-	if now - _chars_time < _scan_interval:
+	var root := minigame()
+	if root != _chars_root:
+		# New minigame (or none): don't serve the previous one's list.
+		_chars_root = root
+		_chars_time = -1.0
+	var wait := _scan_interval if not _chars.is_empty() else 0.1
+	if now - _chars_time < wait:
 		var ok := true
 		for c in _chars.values():
 			if not valid(c):
@@ -230,7 +237,6 @@ func characters() -> Dictionary:
 			return _chars
 	_chars_time = now
 	_chars = {}
-	var root := minigame()
 	if root == null:
 		return _chars
 	for n in descendants(root):

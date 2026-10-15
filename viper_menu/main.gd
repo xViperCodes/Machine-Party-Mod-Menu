@@ -9,7 +9,7 @@ extends Node
 
 const MOD_ID := "viper_menu"
 const MOD_NAME := "Viper Menu"
-const VERSION := "v0.3"
+const VERSION := "v0.3.1"
 const AUTHOR := "xViperCodes"
 ## Info tab buttons.
 const GITHUB_URL := "https://github.com/xViperCodes/Machine-Party-Mod-Menu"

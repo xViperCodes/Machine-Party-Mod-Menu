@@ -1,12 +1,12 @@
 <div align="center">
 
-# 🐍 VIPER MENU v0.3
+# 🐍 VIPER MENU v0.3.1
 
 **Mod menu for Machine Party** - by **xViperCodes**
 
 Runs on Krunk-theduck's [MachinePartyModLoader](https://github.com/Krunk-theduck/MachinePartyModLoader)
 
-![Version](https://img.shields.io/badge/version-v0.3-3ddc84?style=flat-square)
+![Version](https://img.shields.io/badge/version-v0.3.1-3ddc84?style=flat-square)
 ![Game](https://img.shields.io/badge/game-Machine%20Party-555?style=flat-square)
 ![Loader](https://img.shields.io/badge/loader-MachinePartyModLoader-555?style=flat-square)
 
@@ -57,9 +57,10 @@ https://github.com/user-attachments/assets/6015d4f8-18cb-45a1-8c89-79bd60456622
 - **Chisel Gauntlet**: shows or glows only the segments you need to carve
 - **Tunnel Hazard**: colors the nooks (green = safe, red = press)
 - **Stable Footing**: shows the safe symbol, can hide the tiles that are dropping, fallback symbol on V
-- **Inside Job**: highlights the syringe ![HOST](https://img.shields.io/badge/HOST-ff6b6b?style=flat-square), can hide the other containers, fullbright
+- **Inside Job** ![HOST](https://img.shields.io/badge/HOST-ff6b6b?style=flat-square): puts the syringe in one container and marks it (move it to the one nearest you if you like), can hide the other containers, fullbright
 - **Table Manners**: countdown HUD for when the coach looks. Exact timer as host; as a client, tap L / K when he looks up / away.
-- **The Filter**: hold G to auto-sort items (best-effort for now, more accurate in a later update)
+- **The Filter**: hold G to auto-sort - reads the item under your press and pulls the right lever
+- **Smoke Break**: drag / choke meter so you know when to let go, optional auto-exhale before you choke; ESP shows who is choking or inhaling
 
 ### Players
 - Player list with Teleport To and Teleport To Me. These use the game's own teleport, so they work on friends without the mod.
@@ -198,6 +199,8 @@ Anything else is evaluated as a GDScript expression, e.g. `me.global_position`. 
 These haven't been fully tested in real lobbies yet. If you try them, let me know how it went:
 
 - The Filter auto-solve
+- Inside Job syringe container (host)
+- Smoke Break auto-exhale
 - Stable Footing solver
 - Table Manners as a client
 
@@ -224,7 +227,7 @@ Also useful: `%APPDATA%\Godot\app_userdata\Machine Party\modloader.log` shows wh
 
 ## Download
 
-- [viper_menu_v0.3.zip](../../releases/latest)
+- [viper_menu_v0.3.1.zip](../../releases/latest)
 
 ---
 

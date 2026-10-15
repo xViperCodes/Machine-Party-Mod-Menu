@@ -1,4 +1,4 @@
-# Viper Menu v0.3 - Machine Party
+# Viper Menu v0.3.1 - Machine Party
 
 Mod for Krunk-theduck's MachinePartyModLoader (loader v3 / API 2). Developed by xViperCodes.
 
@@ -32,6 +32,15 @@ While the menu is open only INSERT/END work, so clicking around doesn't fire gam
 
 The menu fits itself to the screen. Drag the title bar to move it, drag the corner grip to resize it,
 and use Settings > Menu scale to make it bigger or smaller.
+
+## New in v0.3.1 (fixes)
+- **The Filter auto-solve** now reads the item actually under your press (it was reading the next
+  item in the queue) and pulls the right lever with the same call the buttons use.
+- **Smoke Break:** a drag / choke meter for you, optional auto-exhale before you choke, and ESP
+  shows who's choking or inhaling.
+- **Inside Job (host):** the game never hides the syringe in a container - it gives it to whoever
+  finishes the Nth search. The mod now picks one container, makes sure the syringe comes out of
+  that one, and marks it. You can move it to the container nearest you.
 
 ## New in v0.3
 - **Server Browser tab:** list public lobbies, join one, join any lobby by room ID, copy your room ID,
@@ -68,9 +77,6 @@ The host runs the game logic, so some features need you to be host:
 - **Godmode** is fully reliable only as host (each machine keeps its own health counter).
 
 ## Known limits
-- **The Filter auto-solve** is best-effort: the Filter's player script wasn't in the decompiled
-  files, so it detects items by their type value (0-3 burn, 4-7 recycle). The status line in the
-  Solvers tab says what it found. Swap Buttons / the action names fix inverted inputs.
 - **Bots (beta)** stand still. A minigame that waits on every player for something the mod
   doesn't answer can hang - remove the bot.
 - ESP / aimbot / solver overlays target online play; local couch mode renders split-screen.

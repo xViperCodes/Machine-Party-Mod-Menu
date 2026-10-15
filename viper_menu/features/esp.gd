@@ -318,11 +318,20 @@ func _token(tok: String, n: Node) -> Dictionary:
 			var who: String = G.player_name(owner_id) if owner_id > 0 else "nobody"
 			return {"text": "%d crates (%s)" % [cnt, who], "color": null, "flag": cnt > 0}
 		"@choke":
-			var ct := float(G.gv(n, "choke_timer", 0.0))
-			var cto := float(G.gv(n, "choke_timeout", 3.0))
-			var drag := float(G.gv(n, "drag_progress", 0.0))
-			var col = Color("#ff3030") if ct > 0.0 else null
-			return {"text": "choke %.1f/%.1f  drag %d%%" % [ct, cto, int(drag * 100.0)], "color": col, "flag": ct > 0.0}
+			if n == G.my_char():
+				var ct := float(G.gv(n, "choke_timer", 0.0))
+				var drag := float(G.gv(n, "drag_progress", 0.0))
+				if ct > 0.0:
+					return {"text": "CHOKING %.1fs" % ct, "color": Color("#ff3030"), "flag": true}
+				return {"text": "drag %d%%" % int(round(drag * 100.0)), "color": Color("#ffd23f") if drag > 0.6 else null, "flag": drag > 0.85}
+			# Other players: only their particles and cigarette glow are synced.
+			if float(G.gv(n, "choke_emitter.amount_ratio", 0.0)) > 0.01:
+				return {"text": "CHOKING", "color": Color("#ff3030"), "flag": true}
+			if float(G.gv(n, "cigarette_light.light_energy", 0.0)) > 0.05:
+				return {"text": "inhaling", "color": Color("#ffd23f"), "flag": false}
+			if float(G.gv(n, "smoke_emitter.amount_ratio", 0.0)) > 0.5:
+				return {"text": "exhaling", "color": null, "flag": false}
+			return {"text": "", "color": null, "flag": false}
 		"@carve", "@burn", "@coach", "@syringe":
 			if sv != null and sv.has_method("esp_token"):
 				return sv.esp_token(tok, n)

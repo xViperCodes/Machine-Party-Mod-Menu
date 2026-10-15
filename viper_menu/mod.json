@@ -1,7 +1,7 @@
 {
   "id": "viper_menu",
   "name": "Viper Menu",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "entry": "main.gd",
   "priority": 10,
   "requires": []
