@@ -226,7 +226,7 @@ Also useful: `%APPDATA%\Godot\app_userdata\Machine Party\modloader.log` shows wh
 
 ## Download
 
-- [viper_menu_v0.3.1.zip](../../releases/latest)
+- [viper_menu_v0.3.2.zip](../../releases/latest)
 
 ---
 
